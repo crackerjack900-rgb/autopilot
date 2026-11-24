@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Authorization code</title>
+<style>body{font:16px/1.5 system-ui,sans-serif;max-width:640px;margin:48px auto;padding:0 20px;color:#1a1a1a}
+code{display:block;word-break:break-all;background:#f3f3f3;padding:14px;border-radius:8px;margin:12px 0}
+button{font:inherit;padding:8px 16px;border-radius:8px;border:1px solid #bbb;background:#fff;cursor:pointer}</style></head>
+<body><h1>TikTok authorization</h1>
+<p id="msg">Copy this whole page URL, or just the code below, and paste it into <b>tiktok_auth.py</b>.</p>
+<code id="code">(no code in this URL)</code>
+<button onclick="navigator.clipboard.writeText(location.href)">Copy page URL</button>
+<script>
+const p=new URLSearchParams(location.search);
+if(p.get('code')) document.getElementById('code').textContent=p.get('code');
+if(p.get('error')) document.getElementById('msg').textContent='TikTok returned an error: '+p.get('error')+' '+(p.get('error_description')||'');
+</script></body></html>

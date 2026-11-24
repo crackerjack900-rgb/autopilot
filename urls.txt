@@ -1,0 +1,2 @@
+# One video URL per line. Committing a change here makes clips from any new URLs.
+# Lines starting with # are ignored. Already-processed URLs are skipped.
