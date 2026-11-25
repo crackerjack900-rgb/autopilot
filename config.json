@@ -1,10 +1,10 @@
 {
   "clips": {
-    "max_per_video": 8,
-    "min_seconds": 62,
-    "max_seconds": 115,
-    "target_seconds": 80,
-    "one_clip_per_n_minutes": 3
+    "max_per_video": 15,
+    "min_seconds": 20,
+    "max_seconds": 60,
+    "target_seconds": 40,
+    "one_clip_per_n_minutes": 1
   },
   "transcription": {
     "whisper_model": "small",
@@ -42,7 +42,7 @@
     "check_latest": 5,
     "min_minutes": 5,
     "first_run_take": 1,
-    "max_downloads_per_run": 3,
+    "max_downloads_per_run": 6,
     "transcribe": true
   }
 }
