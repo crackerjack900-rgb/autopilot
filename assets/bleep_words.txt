@@ -1,0 +1,14 @@
+# Words that get bleeped in the audio and starred in captions (regex, one per line, whole word).
+f+u+c+k\w*
+motherf\w*
+sh+i+t+\w*
+bullshit\w*
+b+i+t+c+h\w*
+cunt\w*
+puss(y|ies)
+dick(s|head)?
+cock(s|sucker)?
+ass(hole|holes)?
+whore\w*
+slut\w*
+nigg\w*

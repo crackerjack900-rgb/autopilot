@@ -28,14 +28,15 @@ def build_caption(cfg, hook, creator):
     return re.sub(r"[ \t]+", " ", cap).strip()
 
 
-def ingest(url, cfg, creator=None, permission=None, local_file=None, force=False):
+def ingest(url, cfg, creator=None, permission=None, local_file=None, force=False, max_minutes=None):
     from .fetch import fetch
     from .render import render
     from .select_clips import select
     from .transcribe import transcribe
 
     q = Q.load()
-    meta = fetch(url, local_file=local_file)
+    max_minutes = max_minutes or cfg.get("fetch", {}).get("max_minutes")
+    meta = fetch(url, local_file=local_file, max_minutes=max_minutes)
     if Q.seen_source(q, meta["id"]) and not force:
         log("already processed", meta["id"], "- skipping (use --force to redo)")
         return []
@@ -113,6 +114,7 @@ def main(argv=None):
     sub = ap.add_subparsers(dest="cmd", required=True)
     a = sub.add_parser("ingest"); a.add_argument("url"); a.add_argument("--creator"); a.add_argument("--permission")
     a.add_argument("--local-file"); a.add_argument("--force", action="store_true")
+    a.add_argument("--max-minutes", type=float, help="only use the first N minutes of the video")
     b = sub.add_parser("ingest-text"); b.add_argument("text", help="any text; every URL in it is ingested")
     b.add_argument("--creator"); b.add_argument("--permission")
     c = sub.add_parser("ingest-file"); c.add_argument("path")
@@ -128,7 +130,7 @@ def main(argv=None):
                 f.write(f"{k}={v}\n")
 
     if args.cmd == "ingest":
-        added = ingest(args.url, cfg, args.creator, args.permission, args.local_file, args.force)
+        added = ingest(args.url, cfg, args.creator, args.permission, args.local_file, args.force, args.max_minutes)
         emit("added", len(added))
     elif args.cmd in ("ingest-text", "ingest-file"):
         text = Path(args.path).read_text() if args.cmd == "ingest-file" else args.text

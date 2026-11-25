@@ -4,6 +4,7 @@ import subprocess
 from pathlib import Path
 
 from . import ASSETS, log
+from .censor import bleep_spans, is_bleep, star
 
 W, H = 1080, 1920
 
@@ -63,7 +64,7 @@ def write_ass(words, start, end, path, cfg):
 
     def flush():
         if chunk:
-            txt = " ".join(x["w"] for x in chunk)
+            txt = " ".join(star(x["w"]) if c.get("bleep_swears") and is_bleep(x["w"]) else x["w"] for x in chunk)
             if c.get("uppercase"):
                 txt = txt.upper()
             txt = txt.replace("{", "(").replace("}", ")").replace("\\", "")
@@ -122,10 +123,19 @@ def render(src, clip, words, out_path, cfg):
         ass = Path(out_path).with_suffix(".ass")
         write_ass(words, st, en, ass, cfg)
         vf += f",subtitles={ass}:fontsdir={ASSETS}"
+    fc = f"[0:v]{vf}[v]"
+    amap = "0:a?"
+    spans = bleep_spans(words, st, en) if (cfg["captions"].get("bleep_swears") and words) else []
+    if spans:
+        on = "+".join(f"between(t,{a:.3f},{b:.3f})" for a, b in spans)
+        fc += (f";[0:a]volume=0:enable='{on}'[mut];"
+               f"sine=frequency=1000:sample_rate=44100:duration={en - st:.3f},volume=0.35,"
+               f"volume=0:enable='not({on})'[bp];[mut][bp]amix=inputs=2:duration=first:normalize=0[a]")
+        amap = "[a]"
     cmd = ["ffmpeg", "-y", "-v", "error", "-ss", f"{st:.3f}", "-to", f"{en:.3f}", "-i", str(src),
-           "-filter_complex", f"[0:v]{vf}[v]", "-map", "[v]", "-map", "0:a?",
+           "-filter_complex", fc, "-map", "[v]", "-map", amap,
            "-r", "30", "-c:v", "libx264", "-preset", "veryfast", "-crf", "21", "-pix_fmt", "yuv420p",
            "-c:a", "aac", "-b:a", "160k", "-ar", "44100", "-movflags", "+faststart", str(out_path)]
     subprocess.run(cmd, check=True)
-    log(f"rendered {Path(out_path).name} [{mode}] {en - st:.1f}s")
+    log(f"rendered {Path(out_path).name} [{mode}] {en - st:.1f}s, {len(spans)} bleeps")
     return mode

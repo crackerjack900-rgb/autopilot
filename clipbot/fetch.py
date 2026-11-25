@@ -12,7 +12,7 @@ def _slug(s):
     return re.sub(r"[^A-Za-z0-9_-]+", "-", s)[:60].strip("-") or "video"
 
 
-def fetch(url, local_file=None):
+def fetch(url, local_file=None, max_minutes=None):
     """Returns dict(id, title, creator, duration, url, path). local_file skips download (tests / dropped files)."""
     if local_file:
         src = Path(local_file)
@@ -38,6 +38,10 @@ def fetch(url, local_file=None):
         "no_warnings": True,
         "retries": 5,
     }
+    if max_minutes:
+        from yt_dlp.utils import download_range_func
+        opts["download_ranges"] = download_range_func(None, [(0, float(max_minutes) * 60)])
+        opts["force_keyframes_at_cuts"] = True
     cookies = os.environ.get("YTDLP_COOKIES_FILE")
     if cookies and Path(cookies).exists() and Path(cookies).stat().st_size > 0:
         opts["cookiefile"] = cookies
@@ -52,7 +56,7 @@ def fetch(url, local_file=None):
         "id": _slug(f"{info.get('extractor_key','web')}-{vid}"),
         "title": info.get("title") or vid,
         "creator": info.get("uploader") or info.get("channel") or "",
-        "duration": info.get("duration"),
+        "duration": min(info.get("duration") or 1e9, float(max_minutes) * 60) if max_minutes else info.get("duration"),
         "url": info.get("webpage_url") or url,
         "path": str(path),
     }

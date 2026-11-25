@@ -18,6 +18,9 @@ on:
       permission:
         description: "Permission note, e.g. 'licensed via email 2026-11-09' (optional)"
         required: false
+      max_minutes:
+        description: "Only use the first N minutes (optional, e.g. 30)"
+        required: false
   push:
     paths: [urls.txt]
 
@@ -77,7 +80,8 @@ jobs:
           URL: ${{ inputs.url }}
           CREATOR: ${{ inputs.creator }}
           PERMISSION: ${{ inputs.permission }}
-        run: python -m clipbot ingest "$URL" ${CREATOR:+--creator "$CREATOR"} ${PERMISSION:+--permission "$PERMISSION"}
+          MAXMIN: ${{ inputs.max_minutes }}
+        run: python -m clipbot ingest "$URL" ${CREATOR:+--creator "$CREATOR"} ${PERMISSION:+--permission "$PERMISSION"} ${MAXMIN:+--max-minutes "$MAXMIN"}
       - name: Make clips (urls.txt)
         if: github.event_name == 'push'
         run: python -m clipbot ingest-file urls.txt

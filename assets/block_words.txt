@@ -1,0 +1,9 @@
+# A clip containing any of these is never made (regex, one per line, whole word).
+nigger\w*
+fag(s|got\w*)?
+retard(s|ed)?
+tranny|trannies
+kys
+chink\w*
+spic(s)?
+kike\w*

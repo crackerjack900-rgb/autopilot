@@ -11,6 +11,7 @@ from pathlib import Path
 import numpy as np
 
 from . import ROOT, log
+from .censor import has_blocked
 
 HOOK_WORDS = {
     "why", "how", "what", "never", "always", "secret", "mistake", "truth", "actually", "crazy",
@@ -94,7 +95,7 @@ def select(video_id, transcript, video_path, cfg, duration=None):
             d = win[-1]["end"] - win[0]["start"]
             if d > c["max_seconds"]:
                 break
-            if d >= c["min_seconds"]:
+            if d >= c["min_seconds"] and not has_blocked(" ".join(x["text"] for x in win)):
                 s = _score(win, loud, hop) - abs(d - c["target_seconds"]) / c["target_seconds"] * 2.0
                 cands.append((s, win[0]["start"], win[-1]["end"], win[0]["text"]))
     cands.sort(reverse=True)
