@@ -36,28 +36,49 @@ jobs:
   ingest:
     # issues: only react to issues opened by the repo owner
     if: github.event_name != 'issues' || github.event.issue.user.login == github.repository_owner
-    runs-on: ubuntu-latest
+    # YouTube blocks GitHub's own servers, so clip-making runs on your Mac (a self-hosted runner)
+    # by default. Set repo variable INGEST_RUNNER=ubuntu-latest to go back to GitHub's servers.
+    runs-on: ${{ vars.INGEST_RUNNER || 'self-hosted' }}
     timeout-minutes: 300
     env:
       GH_TOKEN: ${{ github.token }}
       CLIPBOT_STORAGE: github
-      CLIPBOT_WORK: /tmp/clipbot-work
-      YTDLP_COOKIES_FILE: /tmp/clipbot-cookies.txt
+      CLIPBOT_WORK: ${{ github.workspace }}/../clipbot-work
+      YTDLP_COOKIES_FILE: ${{ github.workspace }}/../clipbot-cookies.txt
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+
+      # --- GitHub's Linux servers ---
+      - if: runner.os == 'Linux'
+        uses: actions/setup-python@v5
         with:
           python-version: "3.12"
           cache: pip
-      - name: JavaScript runtime for yt-dlp (YouTube)
+      - if: runner.os == 'Linux'
+        name: JavaScript runtime for yt-dlp (YouTube)
         uses: denoland/setup-deno@v2
         with:
           deno-version: v2.x
-      - name: Install ffmpeg + Python deps
+      - if: runner.os == 'Linux'
+        name: Install ffmpeg + Python deps (Linux)
         run: |
           sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
           pip install -q -r requirements.txt
-      - name: Cache whisper models
+
+      # --- Your Mac ---
+      - if: runner.os == 'macOS'
+        name: Install ffmpeg + Python deps (Mac)
+        run: |
+          export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
+          for t in ffmpeg deno gh python@3.12; do brew list --versions "$t" >/dev/null 2>&1 || brew install "$t"; done
+          PY="$(brew --prefix python@3.12)/bin/python3.12"
+          [ -x "$HOME/.clipbot-venv/bin/python" ] || "$PY" -m venv "$HOME/.clipbot-venv"
+          "$HOME/.clipbot-venv/bin/pip" install -q -U -r requirements.txt
+          echo "$HOME/.clipbot-venv/bin" >> "$GITHUB_PATH"
+          echo "/opt/homebrew/bin" >> "$GITHUB_PATH"
+
+      - if: runner.os == 'Linux'
+        name: Cache whisper models
         uses: actions/cache@v4
         with:
           path: ~/.cache/huggingface
@@ -93,6 +114,10 @@ jobs:
           git config user.email "clipbot@users.noreply.github.com"
           git add queue.json || true
           git diff --cached --quiet || (git commit -m "queue: add clips" && git pull --rebase && git push)
+
+      - name: Delete downloaded videos and work files
+        if: always()
+        run: rm -rf "$CLIPBOT_WORK" "$YTDLP_COOKIES_FILE"
 
       - name: Report back on the issue
         if: always() && github.event_name == 'issues'
