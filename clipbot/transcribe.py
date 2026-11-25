@@ -13,8 +13,15 @@ def transcribe(video_path, model_name="small", language=None):
 
     log(f"transcribing with whisper '{model_name}' (CPU)...")
     model = WhisperModel(model_name, device="cpu", compute_type="int8")
+    # Decode with ffmpeg ourselves: faster-whisper's own decoder (PyAV) breaks with some PyAV versions.
+    import subprocess
+
+    import numpy as np
+    pcm = subprocess.run(["ffmpeg", "-v", "error", "-i", str(video_path), "-vn", "-ac", "1", "-ar", "16000",
+                          "-f", "f32le", "-"], capture_output=True, check=True).stdout
+    audio = np.frombuffer(pcm, dtype=np.float32)
     segments, info = model.transcribe(
-        str(video_path), language=language, word_timestamps=True, vad_filter=True, beam_size=5
+        audio, language=language, word_timestamps=True, vad_filter=True, beam_size=5
     )
     words, segs = [], []
     for s in segments:
