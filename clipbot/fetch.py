@@ -22,6 +22,20 @@ def fetch(url, local_file=None, max_minutes=None):
         dst = out / "source.mp4"
         if src.resolve() != dst.resolve():
             shutil.copy(src, dst)
+        tr = src.with_name("transcript.json")  # reuse a transcript the watcher already made
+        if tr.exists() and not (out / "transcript.json").exists():
+            shutil.copy(tr, out / "transcript.json")
+        info = src.with_name("info.json")
+        if info.exists():
+            try:
+                i = json.loads(info.read_text())
+                meta = {"id": _slug(f"Youtube-{i['id']}") if i.get("id") else vid, "title": i.get("title") or src.stem,
+                        "creator": i.get("creator") or "", "duration": i.get("duration"), "url": i.get("url") or url,
+                        "path": str(dst)}
+                (out / "info.json").write_text(json.dumps(meta, indent=2))
+                return meta
+            except (ValueError, KeyError):
+                pass
         meta = {"id": vid, "title": src.stem, "creator": os.environ.get("CLIPBOT_CREATOR", ""),
                 "duration": None, "url": url or str(src), "path": str(dst)}
         (out / "info.json").write_text(json.dumps(meta, indent=2))

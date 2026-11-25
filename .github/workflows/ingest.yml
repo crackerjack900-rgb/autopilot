@@ -10,8 +10,11 @@ on:
   workflow_dispatch:
     inputs:
       url:
-        description: "Video URL"
+        description: "Video URL (or any label when using a file on the Mac)"
         required: true
+      local_path:
+        description: "Optional: a video file already on the Mac (e.g. from Auto Downloads) - skips downloading"
+        required: false
       creator:
         description: "Creator name for the credit line (optional)"
         required: false
@@ -102,7 +105,8 @@ jobs:
           CREATOR: ${{ inputs.creator }}
           PERMISSION: ${{ inputs.permission }}
           MAXMIN: ${{ inputs.max_minutes }}
-        run: python -m clipbot ingest "$URL" ${CREATOR:+--creator "$CREATOR"} ${PERMISSION:+--permission "$PERMISSION"} ${MAXMIN:+--max-minutes "$MAXMIN"}
+          LOCALPATH: ${{ inputs.local_path }}
+        run: python -m clipbot ingest "$URL" ${CREATOR:+--creator "$CREATOR"} ${PERMISSION:+--permission "$PERMISSION"} ${MAXMIN:+--max-minutes "$MAXMIN"} ${LOCALPATH:+--local-file "$LOCALPATH"}
       - name: Make clips (urls.txt)
         if: github.event_name == 'push'
         run: python -m clipbot ingest-file urls.txt
