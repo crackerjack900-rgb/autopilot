@@ -91,7 +91,7 @@ def run():
     per_channel = int(w.get("check_latest", 5))
     min_minutes = float(w.get("min_minutes", 5))
     first_take = int(w.get("first_run_take", 1))
-    max_per_run = int(w.get("max_downloads_per_run", 3))
+    max_per_run = int(os.environ.get("WATCH_MAX_DOWNLOADS") or w.get("max_downloads_per_run", 3))
     do_transcribe = bool(w.get("transcribe", True))
 
     state = json.loads(STATE.read_text()) if STATE.exists() else {}

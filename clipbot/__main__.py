@@ -115,6 +115,8 @@ def main(argv=None):
     a = sub.add_parser("ingest"); a.add_argument("url"); a.add_argument("--creator"); a.add_argument("--permission")
     a.add_argument("--local-file"); a.add_argument("--force", action="store_true")
     a.add_argument("--max-minutes", type=float, help="only use the first N minutes of the video")
+    a.add_argument("--min-seconds", type=float, help="shortest clip length for this run")
+    a.add_argument("--max-seconds", type=float, help="longest clip length for this run")
     b = sub.add_parser("ingest-text"); b.add_argument("text", help="any text; every URL in it is ingested")
     b.add_argument("--creator"); b.add_argument("--permission")
     c = sub.add_parser("ingest-file"); c.add_argument("path")
@@ -131,6 +133,11 @@ def main(argv=None):
                 f.write(f"{k}={v}\n")
 
     if args.cmd == "ingest":
+        if args.min_seconds or args.max_seconds:
+            lo = args.min_seconds or cfg["clips"]["min_seconds"]
+            hi = args.max_seconds or cfg["clips"]["max_seconds"]
+            cfg["clips"].update(min_seconds=lo, max_seconds=hi, target_seconds=(lo + hi) / 2,
+                                one_clip_per_n_minutes=max(cfg["clips"]["one_clip_per_n_minutes"], hi / 60))
         added = ingest(args.url, cfg, args.creator, args.permission, args.local_file, args.force, args.max_minutes)
         emit("added", len(added))
     elif args.cmd in ("ingest-text", "ingest-file"):

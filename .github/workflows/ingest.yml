@@ -24,6 +24,9 @@ on:
       max_minutes:
         description: "Only use the first N minutes (optional, e.g. 30)"
         required: false
+      clip_seconds:
+        description: "Clip length range for this run, e.g. 60-120 (optional)"
+        required: false
   push:
     paths: [urls.txt]
 
@@ -106,7 +109,11 @@ jobs:
           PERMISSION: ${{ inputs.permission }}
           MAXMIN: ${{ inputs.max_minutes }}
           LOCALPATH: ${{ inputs.local_path }}
-        run: python -m clipbot ingest "$URL" ${CREATOR:+--creator "$CREATOR"} ${PERMISSION:+--permission "$PERMISSION"} ${MAXMIN:+--max-minutes "$MAXMIN"} ${LOCALPATH:+--local-file "$LOCALPATH"}
+          CLIPSEC: ${{ inputs.clip_seconds }}
+        run: |
+          LEN=()
+          if [ -n "$CLIPSEC" ]; then LEN=(--min-seconds "${CLIPSEC%-*}" --max-seconds "${CLIPSEC#*-}"); fi
+          python -m clipbot ingest "$URL" ${CREATOR:+--creator "$CREATOR"} ${PERMISSION:+--permission "$PERMISSION"} ${MAXMIN:+--max-minutes "$MAXMIN"} ${LOCALPATH:+--local-file "$LOCALPATH"} "${LEN[@]}"
       - name: Make clips (urls.txt)
         if: github.event_name == 'push'
         run: python -m clipbot ingest-file urls.txt

@@ -6,6 +6,10 @@ on:
   schedule:
     - cron: "23 */3 * * *"
   workflow_dispatch:
+    inputs:
+      max_downloads:
+        description: "Only download this many new videos this run (optional)"
+        required: false
 
 permissions:
   contents: write
@@ -22,6 +26,7 @@ jobs:
     env:
       GH_TOKEN: ${{ github.token }}
       WATCH_DIR: ${{ vars.WATCH_DIR }}
+      WATCH_MAX_DOWNLOADS: ${{ inputs.max_downloads }}
     steps:
       - uses: actions/checkout@v4
       - name: Install ffmpeg + Python deps (Mac)
