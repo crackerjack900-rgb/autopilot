@@ -107,7 +107,8 @@ def select(video_id, transcript, video_path, cfg, duration=None):
         if len(chosen) >= n_wanted:
             break
     chosen.sort(key=lambda x: x[1])
-    out = [{"start": round(max(st - 0.15, 0), 2), "end": round(en + 0.35, 2), "hook": first, "score": round(s, 2)}
+    out = [{"start": round(float(max(st - 0.15, 0)), 2), "end": round(float(en + 0.35), 2), "hook": first,
+            "score": round(float(s), 2)}
            for s, st, en, first in chosen]
     log(f"selected {len(out)} clips:", [(o['start'], o['end'], o['score']) for o in out])
     return out

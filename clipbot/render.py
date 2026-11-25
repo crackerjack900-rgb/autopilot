@@ -1,5 +1,6 @@
 """Render a 1080x1920 clip: face-following crop (or blurred-background fit) + burned-in word captions."""
 import json
+import os
 import subprocess
 from pathlib import Path
 
@@ -122,7 +123,9 @@ def render(src, clip, words, out_path, cfg):
     if cfg["captions"].get("burn_in") and words:
         ass = Path(out_path).with_suffix(".ass")
         write_ass(words, st, en, ass, cfg)
-        vf += f",subtitles={ass}:fontsdir={ASSETS}"
+        # ffmpeg runs inside the clip folder and gets quoted, relative paths: works on every ffmpeg version
+        fonts = os.path.relpath(ASSETS.resolve(), Path(out_path).resolve().parent)
+        vf += f",subtitles='{ass.name}':fontsdir='{fonts}'"
     fc = f"[0:v]{vf}[v]"
     amap = "0:a?"
     spans = bleep_spans(words, st, en) if (cfg["captions"].get("bleep_swears") and words) else []
@@ -132,10 +135,10 @@ def render(src, clip, words, out_path, cfg):
                f"sine=frequency=1000:sample_rate=44100:duration={en - st:.3f},volume=0.35,"
                f"volume=0:enable='not({on})'[bp];[mut][bp]amix=inputs=2:duration=first:normalize=0[a]")
         amap = "[a]"
-    cmd = ["ffmpeg", "-y", "-v", "error", "-ss", f"{st:.3f}", "-to", f"{en:.3f}", "-i", str(src),
+    cmd = ["ffmpeg", "-y", "-v", "error", "-ss", f"{st:.3f}", "-to", f"{en:.3f}", "-i", str(Path(src).resolve()),
            "-filter_complex", fc, "-map", "[v]", "-map", amap,
            "-r", "30", "-c:v", "libx264", "-preset", "veryfast", "-crf", "21", "-pix_fmt", "yuv420p",
-           "-c:a", "aac", "-b:a", "160k", "-ar", "44100", "-movflags", "+faststart", str(out_path)]
-    subprocess.run(cmd, check=True)
+           "-c:a", "aac", "-b:a", "160k", "-ar", "44100", "-movflags", "+faststart", str(Path(out_path).resolve())]
+    subprocess.run(cmd, check=True, cwd=str(Path(out_path).resolve().parent))
     log(f"rendered {Path(out_path).name} [{mode}] {en - st:.1f}s, {len(spans)} bleeps")
     return mode
