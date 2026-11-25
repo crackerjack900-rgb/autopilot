@@ -1,0 +1,50 @@
+name: Watch channels for new videos
+
+# Every 3 hours your Mac checks the channels in channels.txt, downloads anything new to
+# My Passport > Chat GPT & Claude > Video Clips > Auto Downloads, and transcribes it.
+on:
+  schedule:
+    - cron: "23 */3 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+
+concurrency:
+  group: watcher
+  cancel-in-progress: false
+
+jobs:
+  watch:
+    runs-on: self-hosted
+    timeout-minutes: 600
+    env:
+      GH_TOKEN: ${{ github.token }}
+      WATCH_DIR: ${{ vars.WATCH_DIR }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install ffmpeg + Python deps (Mac)
+        run: |
+          export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
+          for t in ffmpeg deno python@3.12; do brew list --versions "$t" >/dev/null 2>&1 || brew install "$t"; done
+          PY="$(brew --prefix python@3.12)/bin/python3.12"
+          [ -x "$HOME/.clipbot-venv/bin/python" ] || "$PY" -m venv "$HOME/.clipbot-venv"
+          "$HOME/.clipbot-venv/bin/pip" install -q -U -r requirements.txt
+          echo "$HOME/.clipbot-venv/bin" >> "$GITHUB_PATH"
+          echo "/opt/homebrew/bin" >> "$GITHUB_PATH"
+      - name: Check channels and download new videos
+        id: watch
+        run: python -m clipbot watch
+      - name: Save which videos were handled
+        if: always()
+        run: |
+          git config user.name "clipbot"
+          git config user.email "clipbot@users.noreply.github.com"
+          git add watch_state.json 2>/dev/null || true
+          git diff --cached --quiet || (git commit -m "watch: new videos" && git pull --rebase && git push)
+      - name: Warn if the My Passport drive wasn't available
+        if: steps.watch.outputs.fallback == 'true' && steps.watch.outputs.new != '0'
+        run: |
+          gh issue create --title "Downloads went to ~/Movies (My Passport not available)" \
+            --body "The watcher couldn't write to My Passport, so new videos were saved to ~/Movies/Clip Autopilot Downloads instead: ${{ steps.watch.outputs.titles }}"

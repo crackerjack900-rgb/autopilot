@@ -1,0 +1,5 @@
+# Channels the watcher checks for new uploads. One per line:  channel URL | creator name
+# New videos are downloaded (+ transcribed) to My Passport > Chat GPT & Claude > Video Clips > Auto Downloads
+https://www.youtube.com/@kaicenatlive/videos | Kai Cenat
+https://www.youtube.com/@h3podcast/videos | H3 Podcast
+https://www.youtube.com/@Druski/videos | Druski

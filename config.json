@@ -37,5 +37,12 @@
   },
   "fetch": {
     "max_minutes": null
+  },
+  "watch": {
+    "check_latest": 5,
+    "min_minutes": 5,
+    "first_run_take": 1,
+    "max_downloads_per_run": 3,
+    "transcribe": true
   }
 }

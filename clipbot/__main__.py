@@ -120,6 +120,7 @@ def main(argv=None):
     c = sub.add_parser("ingest-file"); c.add_argument("path")
     d = sub.add_parser("post"); d.add_argument("--backend")
     sub.add_parser("status")
+    sub.add_parser("watch", help="download + transcribe new uploads from channels.txt")
     args = ap.parse_args(argv)
     cfg = load_config()
     gh_out = os.environ.get("GITHUB_OUTPUT")
@@ -155,6 +156,12 @@ def main(argv=None):
         emit("ready", len(Q.ready(Q.load())))
         if any("error" in r for r in res):
             sys.exit(1)
+    elif args.cmd == "watch":
+        from .watch import run
+        done, fallback = run()
+        emit("new", len(done))
+        emit("fallback", str(fallback).lower())
+        emit("titles", json.dumps(done)[:900])
     elif args.cmd == "status":
         q = Q.load()
         print(json.dumps(Q.summary(q), indent=2))
