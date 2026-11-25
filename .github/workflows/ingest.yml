@@ -116,7 +116,8 @@ jobs:
           git diff --cached --quiet || (git commit -m "queue: add clips" && git pull --rebase && git push)
 
       - name: Delete downloaded videos and work files
-        if: always()
+        # kept after a failed run so a re-run skips the download and transcription
+        if: success()
         run: rm -rf "$CLIPBOT_WORK" "$YTDLP_COOKIES_FILE"
 
       - name: Report back on the issue

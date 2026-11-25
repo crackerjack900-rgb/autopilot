@@ -46,10 +46,15 @@ def fetch(url, local_file=None, max_minutes=None):
     if cookies and Path(cookies).exists() and Path(cookies).stat().st_size > 0:
         opts["cookiefile"] = cookies
     with yt_dlp.YoutubeDL(opts) as ydl:
-        info = ydl.extract_info(url, download=True)
-    vid = info["id"]
-    out = WORK / vid
-    path = next(out.glob("source.*"))
+        info = ydl.extract_info(url, download=False)
+        vid = info["id"]
+        out = WORK / vid
+        if list(out.glob("source.*")) and (out / ".download-complete").exists():
+            log("reusing the video downloaded by an earlier run")
+        else:
+            ydl.process_ie_result(info, download=True)
+            (out / ".download-complete").touch()
+    path = next(p for p in out.glob("source.*") if p.suffix in (".mp4", ".mkv", ".webm"))
     if path.suffix != ".mp4":
         path = path.rename(out / "source.mp4")
     meta = {

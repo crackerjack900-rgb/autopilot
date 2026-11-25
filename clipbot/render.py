@@ -125,7 +125,7 @@ def render(src, clip, words, out_path, cfg):
         write_ass(words, st, en, ass, cfg)
         # ffmpeg runs inside the clip folder and gets quoted, relative paths: works on every ffmpeg version
         fonts = os.path.relpath(ASSETS.resolve(), Path(out_path).resolve().parent)
-        vf += f",subtitles='{ass.name}':fontsdir='{fonts}'"
+        vf += f",subtitles=filename={ass.name}:fontsdir={fonts}"
     fc = f"[0:v]{vf}[v]"
     amap = "0:a?"
     spans = bleep_spans(words, st, en) if (cfg["captions"].get("bleep_swears") and words) else []
