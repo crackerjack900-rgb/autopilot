@@ -27,6 +27,10 @@ on:
       clip_seconds:
         description: "Clip length range for this run, e.g. 60-120 (optional)"
         required: false
+      force:
+        description: "Re-clip a video that was already processed (true/false)"
+        required: false
+        default: "false"
   push:
     paths: [urls.txt]
 
@@ -110,8 +114,10 @@ jobs:
           MAXMIN: ${{ inputs.max_minutes }}
           LOCALPATH: ${{ inputs.local_path }}
           CLIPSEC: ${{ inputs.clip_seconds }}
+          FORCE: ${{ inputs.force }}
         run: |
           LEN=()
+          if [ "$FORCE" = "true" ]; then LEN+=(--force); fi
           if [ -n "$CLIPSEC" ]; then LEN=(--min-seconds "${CLIPSEC%-*}" --max-seconds "${CLIPSEC#*-}"); fi
           python -m clipbot ingest "$URL" ${CREATOR:+--creator "$CREATOR"} ${PERMISSION:+--permission "$PERMISSION"} ${MAXMIN:+--max-minutes "$MAXMIN"} ${LOCALPATH:+--local-file "$LOCALPATH"} "${LEN[@]}"
       - name: Make clips (urls.txt)
